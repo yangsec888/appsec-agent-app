@@ -307,7 +307,7 @@ describe('Chat Routes', () => {
       expect(response.body.status).toBe('success');
       expect(response.body.sessionEnded).toBe(true);
       expect(response.body.message).toContain('ended');
-    });
+    }, 10000); // Increase timeout for API calls
 
     it('should handle ending non-existent session gracefully', async () => {
       const response = await request(app)
@@ -356,7 +356,7 @@ describe('Chat Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.hasSession).toBe(true);
       expect(response.body.message).toContain('Active chat session');
-    });
+    }, 10000); // Increase timeout for API calls
 
     it('should return false after ending session', async () => {
       // Create a session
@@ -417,7 +417,7 @@ describe('Chat Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.hasSession).toBe(true);
-    });
+    }, 15000); // Increase timeout to 15 seconds for multiple API calls
   });
 });
 

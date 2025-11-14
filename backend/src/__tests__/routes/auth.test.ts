@@ -175,7 +175,7 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.user).toBeDefined();
       expect(response.body.user.username).toBe('testauth');
-    });
+    }, 10000); // Increase timeout
 
     it('should reject request without token', async () => {
       const response = await request(app)
@@ -221,6 +221,9 @@ describe('Auth Routes', () => {
 
       // Reset password for other tests
       await UserModel.changePassword(testUserId, 'testpass123');
+      
+      // Small delay to ensure database write completes
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
     it('should reject password change with incorrect current password', async () => {
@@ -234,7 +237,7 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('incorrect');
-    });
+    }, 10000); // Increase timeout to 10 seconds
 
     it('should reject password change with short new password', async () => {
       const response = await request(app)

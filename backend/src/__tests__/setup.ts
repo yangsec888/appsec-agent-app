@@ -23,5 +23,16 @@ afterAll(() => {
   console.log = originalLog;
   console.error = originalError;
   console.warn = originalWarn;
+  
+  // Close database connection to prevent Jest from hanging
+  // Note: better-sqlite3 doesn't require explicit close, but it helps with cleanup
+  try {
+    const db = require('../db/database').default;
+    if (db && typeof db.close === 'function') {
+      db.close();
+    }
+  } catch (error) {
+    // Ignore errors during cleanup
+  }
 });
 

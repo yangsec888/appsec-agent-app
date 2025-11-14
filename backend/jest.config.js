@@ -13,5 +13,6 @@ module.exports = {
   ],
   moduleFileExtensions: ['ts', 'js', 'json'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  maxWorkers: 1, // Run tests serially to avoid database conflicts
 };
 
