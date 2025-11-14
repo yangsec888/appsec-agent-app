@@ -1,0 +1,259 @@
+/**
+ * Chat Interface Component for AppSec Agent Dashboard
+ * 
+ * Author: Sam Li
+ */
+
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { api } from '@/lib/api'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+
+export function ChatInterface() {
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([])
+  const [error, setError] = useState<string | null>(null)
+  const [sessionActive, setSessionActive] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '52px'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
+    }
+  }, [message])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!message.trim()) return
+
+    setLoading(true)
+    setError(null)
+
+    // Add user message to chat
+    const userMessage = { role: 'user', content: message }
+    setMessages(prev => [...prev, userMessage])
+    setMessage('')
+
+    try {
+      // Check if message is /end command
+      if (userMessage.content.trim().toLowerCase() === '/end') {
+        const response = await api.chat(userMessage.content)
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: response.response || 'Chat session ended. Starting a new conversation.'
+        }])
+        setSessionActive(false)
+        // Clear messages after ending session
+        setTimeout(() => {
+          setMessages([])
+        }, 2000)
+        return
+      }
+
+      // Send message with current chat history
+      const response = await api.chat(userMessage.content, undefined, messages)
+      
+      // Add assistant response to chat
+      if (response && response.response) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: response.response 
+        }])
+        // Update session status
+        if (response.sessionEnded) {
+          setSessionActive(false)
+        } else if (response.sessionActive !== false) {
+          setSessionActive(true)
+        }
+      } else {
+        throw new Error('Invalid response format from server')
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to send message'
+      console.error('Chat error:', err)
+      setError(errorMessage)
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `Error: ${errorMessage}` 
+      }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEndSession = async () => {
+    try {
+      setLoading(true)
+      await api.endChat()
+      setSessionActive(false)
+      setMessages([])
+    } catch (err: any) {
+      setError(err.message || 'Failed to end chat session')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="container mx-auto max-w-3xl px-4 py-8">
+          {messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold mb-2">Start a conversation</h2>
+                <p className="text-muted-foreground">
+                  Ask a question about security to get started
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3'
+                        : 'bg-muted rounded-2xl rounded-tl-sm px-4 py-3'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-p:my-2 prose-pre:bg-background/50 prose-code:text-foreground">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code: ({ node, inline, className, children, ...props }: any) => {
+                              const match = /language-(\w+)/.exec(className || '')
+                              return !inline && match ? (
+                                <pre className="bg-background/50 p-3 rounded-md overflow-x-auto text-foreground my-2">
+                                  <code className={`${className} text-foreground font-mono text-sm`} {...props}>
+                                    {children}
+                                  </code>
+                                </pre>
+                              ) : (
+                                <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm text-foreground font-mono" {...props}>
+                                  {children}
+                                </code>
+                              )
+                            },
+                            h1: ({ children }: any) => <h1 className="text-xl font-semibold mt-4 mb-2">{children}</h1>,
+                            h2: ({ children }: any) => <h2 className="text-lg font-semibold mt-3 mb-2">{children}</h2>,
+                            h3: ({ children }: any) => <h3 className="text-base font-semibold mt-2 mb-1">{children}</h3>,
+                            ul: ({ children }: any) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                            ol: ({ children }: any) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                            li: ({ children }: any) => <li className="ml-4">{children}</li>,
+                            p: ({ children }: any) => <p className="my-2 leading-relaxed">{children}</p>,
+                            blockquote: ({ children }: any) => (
+                              <blockquote className="border-l-4 border-muted-foreground/30 pl-4 italic my-2">{children}</blockquote>
+                            ),
+                            a: ({ children, href }: any) => (
+                              <a href={href} className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer">
+                                {children}
+                              </a>
+                            ),
+                            table: ({ children }: any) => (
+                              <div className="overflow-x-auto my-2">
+                                <table className="min-w-full border-collapse border border-border/50">
+                                  {children}
+                                </table>
+                              </div>
+                            ),
+                            th: ({ children }: any) => (
+                              <th className="border border-border/50 px-4 py-2 bg-background/50 font-semibold">
+                                {children}
+                              </th>
+                            ),
+                            td: ({ children }: any) => (
+                              <td className="border border-border/50 px-4 py-2">
+                                {children}
+                              </td>
+                            ),
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Chat Input - Fixed at bottom */}
+      <div className="border-t bg-background">
+        <div className="container mx-auto max-w-3xl px-4 py-4">
+          {error && (
+            <div className="mb-2 text-sm text-destructive">{error}</div>
+          )}
+          {sessionActive && (
+            <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span>💬 Active chat session - conversation history is maintained</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEndSession}
+                disabled={loading}
+                className="h-6 px-2 text-xs"
+              >
+                End Session
+              </Button>
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <Textarea
+                ref={textareaRef}
+                placeholder={sessionActive ? "Message Claude... (type '/end' to end session)" : "Message Claude..."}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmit(e)
+                  }
+                }}
+                className="min-h-[52px] max-h-[200px] resize-none pr-12"
+                rows={1}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              disabled={loading || !message.trim()}
+              className="h-[52px] px-6"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  Sending...
+                </span>
+              ) : (
+                'Send'
+              )}
+            </Button>
+          </form>
+          <div className="mt-2 text-xs text-muted-foreground">
+            <p>💡 Tip: Type <code className="bg-muted px-1 rounded">/end</code> to end the current chat session and start fresh</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
