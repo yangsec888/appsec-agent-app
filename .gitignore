@@ -6,7 +6,6 @@ dist/
 .env.local
 .env.*.local
 *.tsbuildinfo
-.cursor/
 .vscode/
 
 # Database files (may contain sensitive user data)
