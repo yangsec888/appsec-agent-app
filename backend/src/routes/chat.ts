@@ -113,11 +113,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     
     try {
       // Intercept stdout to capture the response
-      process.stdout.write = function(chunk: any, encoding?: any, cb?: any): boolean {
+      process.stdout.write = function(chunk: string | Uint8Array, encoding?: BufferEncoding | ((err?: Error | null) => void), cb?: (err?: Error | null) => void): boolean {
         if (typeof chunk === 'string') {
           capturedOutput += chunk;
         }
-        return originalStdoutWrite(chunk, encoding, cb);
+        return originalStdoutWrite(chunk, encoding as BufferEncoding, cb);
       };
       
       if (role === 'simple_query_agent') {
@@ -189,16 +189,19 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         console.warn('⚠️  Agent returned empty response');
         console.log('Captured output length:', capturedOutput.length);
       }
-    } catch (agentError: any) {
+    } catch (agentError: unknown) {
       // Restore original stdout on error
       process.stdout.write = originalStdoutWrite;
       console.error('Agent method error:', agentError);
-      console.error('Agent error details:', {
-        message: agentError.message,
-        stack: agentError.stack,
-        name: agentError.name
-      });
-      throw new Error(`Agent execution failed: ${agentError.message || 'Unknown error'}`);
+      if (agentError instanceof Error) {
+        console.error('Agent error details:', {
+          message: agentError.message,
+          stack: agentError.stack,
+          name: agentError.name
+        });
+        throw new Error(`Agent execution failed: ${agentError.message}`);
+      }
+      throw new Error('Agent execution failed: Unknown error');
     }
 
     // Ensure we have a valid response
@@ -226,11 +229,14 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       role,
       sessionActive: true
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Chat error:', error);
-    console.error('Error stack:', error.stack);
-    const errorMessage = error.message || 'Unknown error occurred';
-    res.status(500).json({ error: 'Failed to process chat message', message: errorMessage });
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to process chat message', message: error.message });
+    } else {
+      res.status(500).json({ error: 'Failed to process chat message', message: 'Unknown error occurred' });
+    }
   }
 });
 
@@ -244,9 +250,10 @@ router.post('/end', authenticateToken, async (req: AuthRequest, res: Response) =
       message: 'Chat session ended successfully',
       sessionEnded: true
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('End chat session error:', error);
-    res.status(500).json({ error: 'Failed to end chat session', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to end chat session', message });
   }
 });
 
@@ -259,9 +266,10 @@ router.get('/session', authenticateToken, async (req: AuthRequest, res: Response
       hasSession,
       message: hasSession ? 'Active chat session exists' : 'No active chat session'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get session status error:', error);
-    res.status(500).json({ error: 'Failed to get session status', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to get session status', message });
   }
 });
 

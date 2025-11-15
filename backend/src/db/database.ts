@@ -46,8 +46,9 @@ try {
     db.exec(`ALTER TABLE users ADD COLUMN password_changed INTEGER DEFAULT 0`);
     console.log('✅ Added password_changed column to users table');
   }
-} catch (error: any) {
-  console.warn('Migration warning:', error.message);
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown error occurred';
+  console.warn('Migration warning:', message);
 }
 
 export interface User {

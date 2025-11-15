@@ -158,7 +158,7 @@ export const api = {
       const data = await response.json();
       console.log('Chat API response:', data);
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat API error:', error);
       // Handle network errors
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -181,7 +181,7 @@ export const api = {
       }
       
       return response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('End chat error:', error);
       throw error;
     }
@@ -200,7 +200,7 @@ export const api = {
       }
       
       return response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Get chat session error:', error);
       throw error;
     }

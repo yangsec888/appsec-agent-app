@@ -13,11 +13,17 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 
+interface CodeReviewResult {
+  status: string;
+  reportPath?: string;
+  reportContent?: string;
+}
+
 export function CodeReview() {
   const [repoPath, setRepoPath] = useState('')
   const [query, setQuery] = useState('Review this codebase for security vulnerabilities')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<CodeReviewResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,8 +35,12 @@ export function CodeReview() {
     try {
       const response = await api.codeReview(repoPath, query)
       setResult(response)
-    } catch (err: any) {
-      setError(err.message || 'Failed to perform code review')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to perform code review');
+      }
     } finally {
       setLoading(false)
     }

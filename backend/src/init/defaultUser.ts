@@ -22,8 +22,9 @@ export async function initializeDefaultAdmin() {
     console.log('   Username: admin');
     console.log('   Password: admin');
     console.log('   ⚠️  Please change the default password after first login!');
-  } catch (error: any) {
-    console.error('❌ Failed to create default admin user:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('❌ Failed to create default admin user:', message);
   }
 }
 

@@ -13,11 +13,17 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 
+interface ThreatModelingResult {
+  status: string;
+  reportPath?: string;
+  reportContent?: string;
+}
+
 export function ThreatModeling() {
   const [repoPath, setRepoPath] = useState('')
   const [query, setQuery] = useState('Perform threat modeling analysis')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<ThreatModelingResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,8 +35,12 @@ export function ThreatModeling() {
     try {
       const response = await api.threatModeling(repoPath, query)
       setResult(response)
-    } catch (err: any) {
-      setError(err.message || 'Failed to perform threat modeling')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to perform threat modeling');
+      }
     } finally {
       setLoading(false)
     }

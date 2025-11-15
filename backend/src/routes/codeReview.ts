@@ -78,9 +78,10 @@ router.post('/', upload.single('repository'), async (req: Request, res: Response
       reportPath: args.output_file,
       reportContent
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Code review error:', error);
-    res.status(500).json({ error: 'Failed to perform code review', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to perform code review', message });
   }
 });
 
@@ -101,8 +102,10 @@ router.get('/reports', (req: Request, res: Response) => {
       }));
 
     res.json({ reports: files });
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed to list reports', message: error.message });
+  } catch (error: unknown) {
+    console.error('List reports error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to list reports', message });
   }
 });
 

@@ -12,6 +12,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import type { Components } from 'react-markdown'
+
+interface MarkdownComponentProps {
+  children?: React.ReactNode;
+  className?: string;
+  href?: string;
+  inline?: boolean;
+  node?: unknown;
+}
 
 export function ChatInterface() {
   const [message, setMessage] = useState('')
@@ -75,8 +84,8 @@ export function ChatInterface() {
       } else {
         throw new Error('Invalid response format from server')
       }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to send message'
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message'
       console.error('Chat error:', err)
       setError(errorMessage)
       setMessages(prev => [...prev, { 
@@ -94,8 +103,12 @@ export function ChatInterface() {
       await api.endChat()
       setSessionActive(false)
       setMessages([])
-    } catch (err: any) {
-      setError(err.message || 'Failed to end chat session')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to end chat session');
+      }
     } finally {
       setLoading(false)
     }
@@ -134,7 +147,7 @@ export function ChatInterface() {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            code: ({ node, inline, className, children, ...props }: any) => {
+                            code: ({ node, inline, className, children, ...props }: MarkdownComponentProps) => {
                               const match = /language-(\w+)/.exec(className || '')
                               return !inline && match ? (
                                 <pre className="bg-background/50 p-3 rounded-md overflow-x-auto text-foreground my-2">
@@ -148,39 +161,39 @@ export function ChatInterface() {
                                 </code>
                               )
                             },
-                            h1: ({ children }: any) => <h1 className="text-xl font-semibold mt-4 mb-2">{children}</h1>,
-                            h2: ({ children }: any) => <h2 className="text-lg font-semibold mt-3 mb-2">{children}</h2>,
-                            h3: ({ children }: any) => <h3 className="text-base font-semibold mt-2 mb-1">{children}</h3>,
-                            ul: ({ children }: any) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
-                            ol: ({ children }: any) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
-                            li: ({ children }: any) => <li className="ml-4">{children}</li>,
-                            p: ({ children }: any) => <p className="my-2 leading-relaxed">{children}</p>,
-                            blockquote: ({ children }: any) => (
+                            h1: ({ children }: MarkdownComponentProps) => <h1 className="text-xl font-semibold mt-4 mb-2">{children}</h1>,
+                            h2: ({ children }: MarkdownComponentProps) => <h2 className="text-lg font-semibold mt-3 mb-2">{children}</h2>,
+                            h3: ({ children }: MarkdownComponentProps) => <h3 className="text-base font-semibold mt-2 mb-1">{children}</h3>,
+                            ul: ({ children }: MarkdownComponentProps) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                            ol: ({ children }: MarkdownComponentProps) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                            li: ({ children }: MarkdownComponentProps) => <li className="ml-4">{children}</li>,
+                            p: ({ children }: MarkdownComponentProps) => <p className="my-2 leading-relaxed">{children}</p>,
+                            blockquote: ({ children }: MarkdownComponentProps) => (
                               <blockquote className="border-l-4 border-muted-foreground/30 pl-4 italic my-2">{children}</blockquote>
                             ),
-                            a: ({ children, href }: any) => (
+                            a: ({ children, href }: MarkdownComponentProps) => (
                               <a href={href} className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer">
                                 {children}
                               </a>
                             ),
-                            table: ({ children }: any) => (
+                            table: ({ children }: MarkdownComponentProps) => (
                               <div className="overflow-x-auto my-2">
                                 <table className="min-w-full border-collapse border border-border/50">
                                   {children}
                                 </table>
                               </div>
                             ),
-                            th: ({ children }: any) => (
+                            th: ({ children }: MarkdownComponentProps) => (
                               <th className="border border-border/50 px-4 py-2 bg-background/50 font-semibold">
                                 {children}
                               </th>
                             ),
-                            td: ({ children }: any) => (
+                            td: ({ children }: MarkdownComponentProps) => (
                               <td className="border border-border/50 px-4 py-2">
                                 {children}
                               </td>
                             ),
-                          }}
+                          } as Components}
                         >
                           {msg.content}
                         </ReactMarkdown>

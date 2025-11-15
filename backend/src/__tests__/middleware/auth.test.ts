@@ -1,4 +1,5 @@
 import { generateToken, authenticateToken, AuthRequest } from '../../middleware/auth';
+import { Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
@@ -28,7 +29,7 @@ describe('Auth Middleware', () => {
 
   describe('authenticateToken', () => {
     let mockRequest: Partial<AuthRequest>;
-    let mockResponse: any;
+    let mockResponse: Partial<Response>;
     let mockNext: jest.Mock;
 
     beforeEach(() => {
@@ -48,7 +49,7 @@ describe('Auth Middleware', () => {
         authorization: `Bearer ${token}`,
       };
 
-      authenticateToken(mockRequest as AuthRequest, mockResponse, mockNext);
+      authenticateToken(mockRequest as AuthRequest, mockResponse as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockRequest.userId).toBe(1);
@@ -57,7 +58,7 @@ describe('Auth Middleware', () => {
     });
 
     it('should reject request without token', () => {
-      authenticateToken(mockRequest as AuthRequest, mockResponse, mockNext);
+      authenticateToken(mockRequest as AuthRequest, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Access token required' });
@@ -69,7 +70,7 @@ describe('Auth Middleware', () => {
         authorization: 'Bearer invalid-token',
       };
 
-      authenticateToken(mockRequest as AuthRequest, mockResponse, mockNext);
+      authenticateToken(mockRequest as AuthRequest, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid or expired token' });
@@ -81,7 +82,7 @@ describe('Auth Middleware', () => {
         authorization: 'InvalidFormat',
       };
 
-      authenticateToken(mockRequest as AuthRequest, mockResponse, mockNext);
+      authenticateToken(mockRequest as AuthRequest, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockNext).not.toHaveBeenCalled();
@@ -93,7 +94,7 @@ describe('Auth Middleware', () => {
         authorization: token,
       };
 
-      authenticateToken(mockRequest as AuthRequest, mockResponse, mockNext);
+      authenticateToken(mockRequest as AuthRequest, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockNext).not.toHaveBeenCalled();

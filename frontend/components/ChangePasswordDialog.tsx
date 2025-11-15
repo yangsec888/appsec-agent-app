@@ -56,8 +56,12 @@ export function ChangePasswordDialog({ onClose, showCloseButton = true }: Change
           onClose();
         }, 2000);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to change password. Please try again.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to change password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

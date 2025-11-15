@@ -46,9 +46,10 @@ router.post('/register', async (req: Request, res: Response) => {
       },
       token,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Failed to create user', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to create user', message });
   }
 });
 
@@ -91,9 +92,10 @@ router.post('/login', async (req: Request, res: Response) => {
       },
       token,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Login failed', message });
   }
 });
 
@@ -109,7 +111,8 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
         password_changed: user.password_changed,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error('Get user error:', error);
     res.status(404).json({ error: 'User not found' });
   }
 });
@@ -154,9 +157,10 @@ router.post('/change-password', authenticateToken, async (req: AuthRequest, res:
         password_changed: updatedUser.password_changed,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Change password error:', error);
-    res.status(500).json({ error: 'Failed to change password', message: error.message });
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    res.status(500).json({ error: 'Failed to change password', message });
   }
 });
 

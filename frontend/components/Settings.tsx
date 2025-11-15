@@ -36,8 +36,12 @@ export function Settings() {
       setSaved(true)
       setError('')
       setTimeout(() => setSaved(false), 3000)
-    } catch (err: any) {
-      setError(err.message || 'Failed to save configuration')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to save configuration');
+      }
     }
   }
 
